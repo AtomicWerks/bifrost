@@ -31,7 +31,18 @@ func (plugin *Plugin) prepareDirectCacheLookup(ctx *schemas.BifrostContext, req 
 	ctx.SetValue(requestParamsHashKey, paramsHash)
 
 	provider, model, _ := req.GetRequestFields()
-	directCacheID := plugin.generateDirectCacheID(provider, model, cacheKey, hash, paramsHash)
+	
+	// Get virtual key from context if cache_by_virtual_key is enabled
+	var virtualKey string
+	if plugin.config.CacheByVirtualKey != nil && *plugin.config.CacheByVirtualKey {
+		if vk := ctx.Value(schemas.BifrostContextKeyVirtualKey); vk != nil {
+			if vkStr, ok := vk.(string); ok {
+				virtualKey = vkStr
+			}
+		}
+	}
+	
+	directCacheID := plugin.generateDirectCacheID(provider, model, cacheKey, hash, paramsHash, virtualKey)
 
 	return directCacheID, nil
 }

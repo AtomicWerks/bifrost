@@ -554,7 +554,7 @@ func TestPostLLMHookUsesDeterministicStorageIDOutsideDirectMode(t *testing.T) {
 	ctx.SetValue(requestHashKey, "request-hash")
 	ctx.SetValue(requestParamsHashKey, "params-hash")
 
-	directID := plugin.generateDirectCacheID(schemas.OpenAI, "openai/gpt-4o-mini", "default-mode-store", "request-hash", "params-hash")
+	directID := plugin.generateDirectCacheID(schemas.OpenAI, "openai/gpt-4o-mini", "default-mode-store", "request-hash", "params-hash", "")
 	ctx.SetValue(requestStorageIDKey, directID)
 
 	if _, _, err := plugin.PostLLMHook(ctx, response, nil); err != nil {

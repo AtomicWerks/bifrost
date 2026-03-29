@@ -486,13 +486,14 @@ func getMetadataHash(metadata map[string]interface{}) (string, error) {
 	return fmt.Sprintf("%x", xxhash.Sum64(metadataJSON)), nil
 }
 
-func (plugin *Plugin) generateDirectCacheID(provider schemas.ModelProvider, model string, cacheKey string, requestHash string, paramsHash string) string {
+func (plugin *Plugin) generateDirectCacheID(provider schemas.ModelProvider, model string, cacheKey string, requestHash string, paramsHash string, virtualKey string) string {
 	idInput := struct {
 		CacheKey    string `json:"cache_key"`
 		RequestHash string `json:"request_hash"`
 		ParamsHash  string `json:"params_hash"`
 		Provider    string `json:"provider,omitempty"`
 		Model       string `json:"model,omitempty"`
+		VirtualKey  string `json:"virtual_key,omitempty"`
 	}{
 		CacheKey:    cacheKey,
 		RequestHash: requestHash,
@@ -505,6 +506,9 @@ func (plugin *Plugin) generateDirectCacheID(provider schemas.ModelProvider, mode
 	if plugin.config.CacheByModel != nil && *plugin.config.CacheByModel {
 		idInput.Model = model
 	}
+	if plugin.config.CacheByVirtualKey != nil && *plugin.config.CacheByVirtualKey {
+		idInput.VirtualKey = virtualKey
+	}
 
 	idJSON, err := schemas.MarshalDeeplySorted(idInput)
 	if err != nil {
@@ -515,6 +519,9 @@ func (plugin *Plugin) generateDirectCacheID(provider schemas.ModelProvider, mode
 		}
 		if plugin.config.CacheByModel != nil && *plugin.config.CacheByModel {
 			fallbackStr += model
+		}
+		if plugin.config.CacheByVirtualKey != nil && *plugin.config.CacheByVirtualKey {
+			fallbackStr += virtualKey
 		}
 		return uuid.NewSHA1(directCacheNamespace, []byte(fallbackStr)).String()
 	}
