@@ -52,6 +52,7 @@ func TestUnmarshalJSON_AllFields(t *testing.T) {
 		"conversation_history_threshold": 5,
 		"cache_by_model": false,
 		"cache_by_provider": false,
+		"cache_by_virtual_key": true,
 		"exclude_system_prompt": true
 	}`
 
@@ -92,6 +93,9 @@ func TestUnmarshalJSON_AllFields(t *testing.T) {
 	}
 	if config.CacheByProvider == nil || *config.CacheByProvider != false {
 		t.Errorf("CacheByProvider: expected false, got %v", config.CacheByProvider)
+	}
+	if config.CacheByVirtualKey == nil || *config.CacheByVirtualKey != true {
+		t.Errorf("CacheByVirtualKey: expected true, got %v", config.CacheByVirtualKey)
 	}
 	if config.ExcludeSystemPrompt == nil || *config.ExcludeSystemPrompt != true {
 		t.Errorf("ExcludeSystemPrompt: expected true, got %v", config.ExcludeSystemPrompt)
@@ -140,20 +144,23 @@ func TestUnmarshalJSON_BoolPointerFields(t *testing.T) {
 		json                string
 		expectCacheByModel  *bool
 		expectCacheByProv   *bool
+		expectCacheByVK     *bool
 		expectExcludeSys    *bool
 	}{
 		{
 			name:                "all set to true",
-			json:                `{"dimension": 1536, "cache_by_model": true, "cache_by_provider": true, "exclude_system_prompt": true}`,
+			json:                `{"dimension": 1536, "cache_by_model": true, "cache_by_provider": true, "cache_by_virtual_key": true, "exclude_system_prompt": true}`,
 			expectCacheByModel:  bifrost.Ptr(true),
 			expectCacheByProv:   bifrost.Ptr(true),
+			expectCacheByVK:     bifrost.Ptr(true),
 			expectExcludeSys:    bifrost.Ptr(true),
 		},
 		{
 			name:                "all set to false",
-			json:                `{"dimension": 1536, "cache_by_model": false, "cache_by_provider": false, "exclude_system_prompt": false}`,
+			json:                `{"dimension": 1536, "cache_by_model": false, "cache_by_provider": false, "cache_by_virtual_key": false, "exclude_system_prompt": false}`,
 			expectCacheByModel:  bifrost.Ptr(false),
 			expectCacheByProv:   bifrost.Ptr(false),
+			expectCacheByVK:     bifrost.Ptr(false),
 			expectExcludeSys:    bifrost.Ptr(false),
 		},
 		{
@@ -161,6 +168,7 @@ func TestUnmarshalJSON_BoolPointerFields(t *testing.T) {
 			json:                `{"dimension": 1536}`,
 			expectCacheByModel:  nil,
 			expectCacheByProv:   nil,
+			expectCacheByVK:     nil,
 			expectExcludeSys:    nil,
 		},
 	}
@@ -173,6 +181,7 @@ func TestUnmarshalJSON_BoolPointerFields(t *testing.T) {
 			}
 			assertBoolPtr(t, "CacheByModel", config.CacheByModel, tc.expectCacheByModel)
 			assertBoolPtr(t, "CacheByProvider", config.CacheByProvider, tc.expectCacheByProv)
+			assertBoolPtr(t, "CacheByVirtualKey", config.CacheByVirtualKey, tc.expectCacheByVK)
 			assertBoolPtr(t, "ExcludeSystemPrompt", config.ExcludeSystemPrompt, tc.expectExcludeSys)
 		})
 	}

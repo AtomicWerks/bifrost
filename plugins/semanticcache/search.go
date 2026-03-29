@@ -56,6 +56,15 @@ func (plugin *Plugin) performLegacyDirectSearch(ctx *schemas.BifrostContext, req
 		filters = append(filters, vectorstore.Query{Field: "model", Operator: vectorstore.QueryOperatorEqual, Value: model})
 	}
 
+	// Add virtual key filter if enabled - useful for gateways with load balancing across provider instances
+	if plugin.config.CacheByVirtualKey != nil && *plugin.config.CacheByVirtualKey {
+		if vk := ctx.Value(schemas.BifrostContextKeyVirtualKey); vk != nil {
+			if vkStr, ok := vk.(string); ok {
+				filters = append(filters, vectorstore.Query{Field: "virtual_key", Operator: vectorstore.QueryOperatorEqual, Value: vkStr})
+			}
+		}
+	}
+
 	plugin.logger.Debug(fmt.Sprintf("%s Searching for legacy direct hash match with %d filters", PluginLoggerPrefix, len(filters)))
 
 	selectFields := append([]string(nil), SelectFields...)
@@ -191,6 +200,15 @@ func (plugin *Plugin) performSemanticSearch(ctx *schemas.BifrostContext, req *sc
 	}
 	if plugin.config.CacheByModel != nil && *plugin.config.CacheByModel {
 		strictFilters = append(strictFilters, vectorstore.Query{Field: "model", Operator: vectorstore.QueryOperatorEqual, Value: model})
+	}
+
+	// Add virtual key filter if enabled - useful for gateways with load balancing across provider instances
+	if plugin.config.CacheByVirtualKey != nil && *plugin.config.CacheByVirtualKey {
+		if vk := ctx.Value(schemas.BifrostContextKeyVirtualKey); vk != nil {
+			if vkStr, ok := vk.(string); ok {
+				strictFilters = append(strictFilters, vectorstore.Query{Field: "virtual_key", Operator: vectorstore.QueryOperatorEqual, Value: vkStr})
+			}
+		}
 	}
 
 	plugin.logger.Debug(fmt.Sprintf("%s Performing semantic search with %d metadata filters", PluginLoggerPrefix, len(strictFilters)))

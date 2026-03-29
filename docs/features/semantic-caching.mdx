@@ -132,6 +132,7 @@ cacheConfig := &semanticcache.Config{
     // Advanced options
     CacheByModel:    bifrost.Ptr(true),  // Include model in cache key (default: true)
     CacheByProvider: bifrost.Ptr(true),  // Include provider in cache key (default: true)
+    CacheByVirtualKey: bifrost.Ptr(false),  // Cache by virtual key instead of provider instance (default: false)
 }
 
 // Create plugin
@@ -193,7 +194,8 @@ bifrostConfig := schemas.BifrostConfig{
         "exclude_system_prompt": false,
         
         "cache_by_model": true,
-        "cache_by_provider": true
+        "cache_by_provider": true,
+        "cache_by_virtual_key": false
       }
     }
   ]
@@ -253,6 +255,7 @@ cacheConfig := &semanticcache.Config{
     CleanUpOnShutdown: true,
     CacheByModel:      bifrost.Ptr(true),
     CacheByProvider:   bifrost.Ptr(true),
+    CacheByVirtualKey: bifrost.Ptr(false),
 }
 
 plugin, err := semanticcache.Init(ctx, cacheConfig, logger, store)
@@ -273,6 +276,7 @@ bifrost:
         cleanup_on_shutdown: true
         cache_by_model: true
         cache_by_provider: true
+        cache_by_virtual_key: false
 ```
 
 </Tab>
@@ -290,7 +294,8 @@ bifrost:
         "ttl": "5m",
         "cleanup_on_shutdown": true,
         "cache_by_model": true,
-        "cache_by_provider": true
+        "cache_by_provider": true,
+        "cache_by_virtual_key": false
       }
     }
   ]
@@ -547,6 +552,31 @@ Control whether system messages are included in cache key generation:
 - System prompts significantly change response behavior  
 - Each system prompt requires distinct cached responses
 - Strict response consistency requirements
+
+### Virtual Key Caching
+
+The `cache_by_virtual_key` option enables caching by virtual key (x-bf-vk header) instead of the backend provider instance. This ensures cache hits when load balancing across multiple provider instances.
+
+```json
+{
+  "cache_by_virtual_key": false  // Cache by virtual key instead of provider instance (default: false)
+}
+```
+
+**Why use virtual key caching:**
+- **Load Balancing**: When using multiple provider instances behind a load balancer, each instance has different cache storage
+- **Virtual Keys**: The `x-bf-vk` header identifies a logical "virtual" provider that spans across instances
+- **Cross-Instance Hits**: Enable this to share cache entries across all instances using the same virtual key
+
+**When to enable (`true`):**
+- Running Bifrost with multiple provider instances behind a load balancer
+- Using virtual keys (x-bf-vk header) to identify logical provider instances
+- Want cache hits regardless of which instance handles the request
+
+**When to disable (`false`, default):**
+- Single instance deployments
+- Using provider instance-specific caching
+- Existing configurations that should not change behavior
 
 ---
 

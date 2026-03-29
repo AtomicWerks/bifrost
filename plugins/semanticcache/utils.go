@@ -523,7 +523,7 @@ func (plugin *Plugin) generateDirectCacheID(provider schemas.ModelProvider, mode
 }
 
 // buildUnifiedMetadata constructs the unified metadata structure for VectorEntry
-func (plugin *Plugin) buildUnifiedMetadata(provider schemas.ModelProvider, model string, paramsHash string, requestHash string, cacheKey string, ttl time.Duration) map[string]interface{} {
+func (plugin *Plugin) buildUnifiedMetadata(ctx *schemas.BifrostContext, provider schemas.ModelProvider, model string, paramsHash string, requestHash string, cacheKey string, ttl time.Duration) map[string]interface{} {
 	unifiedMetadata := make(map[string]interface{})
 
 	// Top-level fields (outside params)
@@ -532,6 +532,13 @@ func (plugin *Plugin) buildUnifiedMetadata(provider schemas.ModelProvider, model
 	unifiedMetadata["request_hash"] = requestHash
 	unifiedMetadata["cache_key"] = cacheKey
 	unifiedMetadata["from_bifrost_semantic_cache_plugin"] = true
+
+	// Add virtual key if available
+	if vk := ctx.Value(schemas.BifrostContextKeyVirtualKey); vk != nil {
+		if vkStr, ok := vk.(string); ok {
+			unifiedMetadata["virtual_key"] = vkStr
+		}
+	}
 
 	// Calculate expiration timestamp (current time + TTL)
 	expiresAt := time.Now().Add(ttl).Unix()

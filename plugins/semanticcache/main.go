@@ -39,7 +39,8 @@ type Config struct {
 	DefaultCacheKey              string `json:"default_cache_key,omitempty"`              // Default cache key used when no per-request key is provided (optional, caching is disabled when empty and no per-request key is set)
 	ConversationHistoryThreshold int    `json:"conversation_history_threshold,omitempty"` // Skip caching for requests with more than this number of messages in the conversation history (default: 3)
 	CacheByModel                 *bool  `json:"cache_by_model,omitempty"`                 // Include model in cache key (default: true)
-	CacheByProvider              *bool  `json:"cache_by_provider,omitempty"`              // Include provider in cache key (default: true)
+	CacheByProvider              *bool  `json:"cache_by_provider,omitempty"`             // Include provider in cache key (default: true)
+	CacheByVirtualKey            *bool  `json:"cache_by_virtual_key,omitempty"`           // Include virtual key in cache key (default: false) - recommended when caching across provider instances
 	ExcludeSystemPrompt          *bool  `json:"exclude_system_prompt,omitempty"`          // Exclude system prompt in cache key (default: false)
 }
 
@@ -60,6 +61,7 @@ func (c *Config) UnmarshalJSON(data []byte) error {
 		ConversationHistoryThreshold int           `json:"conversation_history_threshold,omitempty"`
 		CacheByModel                 *bool         `json:"cache_by_model,omitempty"`
 		CacheByProvider              *bool         `json:"cache_by_provider,omitempty"`
+		CacheByVirtualKey           *bool         `json:"cache_by_virtual_key,omitempty"`
 		ExcludeSystemPrompt          *bool         `json:"exclude_system_prompt,omitempty"`
 	}
 
@@ -76,6 +78,7 @@ func (c *Config) UnmarshalJSON(data []byte) error {
 	c.Dimension = temp.Dimension
 	c.CacheByModel = temp.CacheByModel
 	c.CacheByProvider = temp.CacheByProvider
+	c.CacheByVirtualKey = temp.CacheByVirtualKey
 	c.VectorStoreNamespace = temp.VectorStoreNamespace
 	c.ConversationHistoryThreshold = temp.ConversationHistoryThreshold
 	c.Threshold = temp.Threshold
@@ -199,6 +202,10 @@ var VectorStoreProperties = map[string]vectorstore.VectorStoreProperties{
 		DataType:    vectorstore.VectorStorePropertyTypeBoolean,
 		Description: "Whether the cache entry was created by the BifrostSemanticCachePlugin",
 	},
+	"virtual_key": {
+		DataType:    vectorstore.VectorStorePropertyTypeString,
+		Description: "The virtual key used for the request (for cross-provider cache sharing)",
+	},
 }
 
 type PluginAccount struct {
@@ -312,6 +319,9 @@ func Init(ctx context.Context, config *Config, logger schemas.Logger, store vect
 	}
 	if config.CacheByProvider == nil {
 		config.CacheByProvider = bifrost.Ptr(true)
+	}
+	if config.CacheByVirtualKey == nil {
+		config.CacheByVirtualKey = bifrost.Ptr(false) // defaults to false for backward compatibility
 	}
 
 	plugin := &Plugin{
@@ -710,7 +720,7 @@ func (plugin *Plugin) PostLLMHook(ctx *schemas.BifrostContext, res *schemas.Bifr
 		defer cancel()
 
 		// Build unified metadata with provider, model, and all params
-		unifiedMetadata := plugin.buildUnifiedMetadata(provider, model, paramsHash, hash, cacheKey, cacheTTL)
+		unifiedMetadata := plugin.buildUnifiedMetadata(ctx, provider, model, paramsHash, hash, cacheKey, cacheTTL)
 
 		// Handle streaming vs non-streaming responses
 		// Pass nil for embedding if we're in direct-only mode to optimize storage

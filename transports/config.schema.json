@@ -1214,6 +1214,10 @@
                       "type": "boolean",
                       "description": "Include provider in cache key (default: true)"
                     },
+                    "cache_by_virtual_key": {
+                      "type": "boolean",
+                      "description": "Include virtual key in cache key (default: false) - recommended when caching across provider instances"
+                    },
                     "exclude_system_prompt": {
                       "type": "boolean",
                       "description": "Exclude system prompt in cache key (default: false)"

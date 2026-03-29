@@ -1,3 +1,4 @@
+- feat: add cache_by_virtual_key option for cross-provider semantic caching
 - fix: hardened direct-only config handling and aligned UI types
 - fix: preserved provider precision in embedding responses
 - fix: skip unsupported count_tokens requests
